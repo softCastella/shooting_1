@@ -2,24 +2,61 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
+    public string enemyName;
+    public GameObject player;
+    public GameObject bulletObjA;
+    public GameObject bulletObjB;
     public float speed;
     public float health;
     public int dmg;
+    public float maxShotDelay;
+    public float curShotDelay;
     
     public Sprite[] sprites;
     SpriteRenderer spriteRenderer;
-    Rigidbody2D rigid;
+   
 
     void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
-        rigid = GetComponent<Rigidbody2D>();
-        if (rigid != null)
-        {
-            rigid.linearVelocity = Vector2.down * speed;
-        }
+        
     }
 
+    void Update()
+    {
+            Fire();
+            Reload();   
+    }
+        
+    void Fire()
+    {
+        if(curShotDelay < maxShotDelay) return; //장전시간이 최대 장전시간보다 작으면 발사하지 않음
+        if(enemyName =="S")
+        {
+            GameObject bullet = Instantiate(bulletObjA,transform.position,transform.rotation);
+            Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
+            Vector3 dirVec = player.transform.position - transform.position;
+            rigid.AddForce(dirVec.normalized*10,ForceMode2D.Impulse);
+        }
+        else if(enemyName =="L")
+        {
+            GameObject bulletL = Instantiate(bulletObjB,transform.position + Vector3.right *0.3f,transform.rotation);
+            GameObject bulletR = Instantiate(bulletObjB,transform.position + Vector3.left *0.3f,transform.rotation);
+            Rigidbody2D rigidL = bulletL.GetComponent<Rigidbody2D>();
+            Rigidbody2D rigidR = bulletR.GetComponent<Rigidbody2D>();
+            Vector3 dirVecL = player.transform.position - (transform.position + Vector3.right *0.3f);
+            Vector3 dirVecR = player.transform.position - (transform.position + Vector3.left *0.3f);
+            rigidL.AddForce(dirVecL.normalized*10,ForceMode2D.Impulse);
+            rigidR.AddForce(dirVecR.normalized*10,ForceMode2D.Impulse);
+        }
+        curShotDelay = 0;//총알쏘고 딜레이 변수 0 초기화
+    }
+
+
+    void Reload()
+    {
+        curShotDelay += Time.deltaTime;
+    }
 
      void OnHit(int dmg)
     {

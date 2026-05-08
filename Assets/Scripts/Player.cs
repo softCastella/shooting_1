@@ -17,10 +17,12 @@ public class Player : MonoBehaviour
     public float maxShotDelay;
     public float curShotDelay;
     Animator anim;
+    GameManager manager;
 
     void Awake()
     {
         anim = GetComponent<Animator>();
+        manager = FindFirstObjectByType<GameManager>();
     }
 
     void Start()
@@ -40,8 +42,7 @@ public class Player : MonoBehaviour
     void Fire() //발사 함수수
     {
         if(!Input.GetButton("Fire1")) return; //파이어버튼이 눌려야하고
-        if(curShotDelay < maxShotDelay) return; //장전시간이 최대 장전시간보다 작으면 발사하지 않음
-
+        
         switch(power)
         {
             case 1:
@@ -72,7 +73,7 @@ public class Player : MonoBehaviour
                 break;
 
         }
-        //power1
+        
 
         curShotDelay = 0;//총알쏘고 딜레이 변수 0 초기화
     }
@@ -123,6 +124,11 @@ public class Player : MonoBehaviour
                     isTouchLeft = true;
                     break;
             }
+        }
+        else if(collision.gameObject.tag == "Enemy" || collision.gameObject.tag == "EnemyBullet")
+        {
+            manager.RespawnPlayer();
+            gameObject.SetActive(false);
 
         }
     }
