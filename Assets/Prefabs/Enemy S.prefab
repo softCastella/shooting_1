@@ -171,14 +171,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   enemyName: S
   enemyScore: 50
-  player: {fileID: 0}
-  bulletObjA: {fileID: 1990329297118147906, guid: b44e9e8742061ab409e95c5690313e46, type: 3}
-  bulletObjB: {fileID: 1990329297118147906, guid: 127b4ba2d8c7dad43becea4a10e8c79f, type: 3}
   speed: 3
   health: 3
   dmg: 0
   maxShotDelay: 3
   curShotDelay: 0
+  player: {fileID: 0}
+  bulletObjA: {fileID: 1990329297118147906, guid: b44e9e8742061ab409e95c5690313e46, type: 3}
+  bulletObjB: {fileID: 1990329297118147906, guid: 127b4ba2d8c7dad43becea4a10e8c79f, type: 3}
+  itemCoin: {fileID: 8234532309664164387, guid: 1ef365a76257a554499c622e42e0831f, type: 3}
+  itemPower: {fileID: 5623583366154271393, guid: 391a215b7e364f54893e416f1b0ae0d4, type: 3}
+  itemBoom: {fileID: 8552656233393741669, guid: 516024a425261ec4086999e46174a1df, type: 3}
   sprites:
   - {fileID: 8414478535512612329, guid: 138040323294fd440a3a823e5d70ad01, type: 3}
   - {fileID: 4326287474489854147, guid: 138040323294fd440a3a823e5d70ad01, type: 3}

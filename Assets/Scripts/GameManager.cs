@@ -14,6 +14,7 @@ public class GameManager : MonoBehaviour
     public GameObject player;
     public TextMeshProUGUI scoreText;
     public Image[] lifeImage;
+    public Image[] boomImage;
     public GameObject gameOverSet;
     Player playerLogic;
 
@@ -80,7 +81,21 @@ public class GameManager : MonoBehaviour
         {
             lifeImage[i].color = new Color(1,1,1,1);
         }
+    }
+
+        public void updateBoomIcon(int boom)
+    {
+        //UI Life Init Disable
+        for(int i = 0; i < boomImage.Length; i++)
+        {
+            boomImage[i].color = new Color(1,1,1,0);
+        }
         
+        //UI Life Active
+        for(int i = 0; i < boom && i < boomImage.Length; i++)
+        {
+            boomImage[i].color = new Color(1,1,1,1);
+        }
     }
 
     //플레이어 복귀 로직

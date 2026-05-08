@@ -4,15 +4,20 @@ public class Enemy : MonoBehaviour
 {
     public string enemyName;
     public int enemyScore;
-    public GameObject player;
-    public GameObject bulletObjA;
-    public GameObject bulletObjB;
+    
     public float speed;
     public float health;
     public int dmg;
     public float maxShotDelay;
     public float curShotDelay;
-    
+
+    public GameObject player;
+    public GameObject bulletObjA;
+    public GameObject bulletObjB;
+    public GameObject itemCoin;
+    public GameObject itemPower;
+    public GameObject itemBoom;
+
     public Sprite[] sprites;
     SpriteRenderer spriteRenderer;
    
@@ -59,8 +64,11 @@ public class Enemy : MonoBehaviour
         curShotDelay += Time.deltaTime;
     }
 
-     void OnHit(int dmg)
+    public void OnHit(int dmg)
     {
+        if(health <= 0) return;
+
+        Debug.Log("OnHit: " + dmg);
         health -= dmg;
         if (spriteRenderer != null && sprites != null && sprites.Length > 1 && sprites[1] != null)
         {
@@ -71,6 +79,26 @@ public class Enemy : MonoBehaviour
         {
             Player playerLogic = player.GetComponent<Player>();
             playerLogic.score += enemyScore;
+
+            //랜덤 비율 아이템 드랍
+            int ran = Random.Range(0,10);
+            if(ran < 3) //NotItem 30%
+            {
+                Debug.Log("NotItem");
+            }
+            else if (ran < 6) //Coin 30%
+            {
+                Instantiate(itemCoin,transform.position, Quaternion.identity);
+            }
+            else if (ran < 8) //Power 20%
+            {
+                Instantiate(itemPower,transform.position, Quaternion.identity);
+            }
+            else if (ran < 10) //Boom  20%
+            {
+                Instantiate(itemBoom,transform.position, Quaternion.identity);
+            }
+
             Destroy(gameObject);
         }
      }

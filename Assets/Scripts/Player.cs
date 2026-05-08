@@ -12,13 +12,20 @@ public class Player : MonoBehaviour
     public int life;
     public int score;
     public float speed;
-    public float power;
+    public int power;
+    public int maxPower;
+    public int boom;
+    public int maxBoom;
     public float maxShotDelay;
     public float curShotDelay;
     public bool isHit;
+    public bool isBoomTime;
 
     public GameObject bulletObjA;
     public GameObject bulletObjB;
+    public GameObject boomEffect;
+
+
     public GameManager manager;
     Animator anim;
 
@@ -37,9 +44,10 @@ public class Player : MonoBehaviour
     //플레이어 이동 키, 포지션 정보
     void Update()
     {
-        Reload();
         Move();
         Fire();
+        Boom();
+        Reload();
     }
 
     void Fire() //발사 함수수
@@ -74,10 +82,7 @@ public class Player : MonoBehaviour
                 rigidCC.AddForce(Vector2.up*10,ForceMode2D.Impulse);
                 rigidRR.AddForce(Vector2.up*10,ForceMode2D.Impulse);
                 break;
-
         }
-        
-
         curShotDelay = 0;//총알쏘고 딜레이 변수 0 초기화
     }
 
@@ -85,6 +90,34 @@ public class Player : MonoBehaviour
     void Reload() //장전 함수
     {
         curShotDelay += Time.deltaTime;
+    }
+
+    void Boom()
+    {
+        if(!Input.GetButton("Fire2")) return;
+        if(isBoomTime) return;
+        if(boom == 0) return;
+        boom--;
+        isBoomTime = true;
+        manager.updateBoomIcon(boom);
+        
+        //폭발 이펙트 활성화
+        boomEffect.SetActive(true);
+        Invoke("OffBoomEffect", 4f);
+        //적 파괴
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        for(int i = 0; i < enemies.Length; i++)
+        {
+        Enemy enemyLogic = enemies[i].GetComponent<Enemy>();
+        enemyLogic.OnHit(1000);
+        }
+        //적 총알 파괴
+        GameObject[] bullets = GameObject.FindGameObjectsWithTag("EnemyBullet");
+        for(int i = 0; i < enemies.Length; i++)
+        {
+        Enemy enemyLogic = enemies[i].GetComponent<Enemy>();
+        Destroy(bullets[i]);
+        }
     }
 
     void Move()
@@ -105,8 +138,6 @@ public class Player : MonoBehaviour
             anim.SetInteger("Input",(int)h);
         }
     }
-
-
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -148,6 +179,38 @@ public class Player : MonoBehaviour
             Destroy(collision.gameObject);
 
         }
+        else if(collision.gameObject.tag == "Item")
+        {
+            Item item = collision.gameObject.GetComponent<Item>();
+            switch(item.type)
+            {
+                case "Coin":
+                    score += 1000;
+                    break;
+                case "Power":
+                if(power == maxPower)
+                score += 500;
+                else power++;
+                    break;
+                case "Boom":
+                
+                if(boom == maxBoom)
+                score += 500;
+                else {
+                    boom++;
+                    manager.updateBoomIcon(boom);
+                }
+                    break;
+            }
+            Destroy(collision.gameObject);
+        }
+    }
+
+
+    void OffBoomEffect()
+    {
+        boomEffect.SetActive(false);
+        isBoomTime = false;
     }
 
     private void OnTriggerExit2D(Collider2D collision)
