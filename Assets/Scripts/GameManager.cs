@@ -1,4 +1,7 @@
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -9,6 +12,15 @@ public class GameManager : MonoBehaviour
     public float curSpawnDelay;
 
     public GameObject player;
+    public TextMeshProUGUI scoreText;
+    public Image[] lifeImage;
+    public GameObject gameOverSet;
+    Player playerLogic;
+
+    void Awake()
+    {
+        playerLogic = player.GetComponent<Player>();
+    }
 
     void Update()
     {
@@ -19,6 +31,9 @@ public class GameManager : MonoBehaviour
             maxSpawnDelay = Random.Range(0.5f, 3f);
             curSpawnDelay = 0;
         }
+
+        //UI Score Update
+        scoreText.text = string.Format("{0:n0}", playerLogic.score);
     }
 
     void SpawnEnemy()
@@ -52,15 +67,45 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void updateLifeIcon(int life)
+    {
+        //UI Life Init Disable
+        for(int i = 0; i < lifeImage.Length; i++)
+        {
+            lifeImage[i].color = new Color(1,1,1,0);
+        }
+        
+        //UI Life Active
+        for(int i = 0; i < life && i < lifeImage.Length; i++)
+        {
+            lifeImage[i].color = new Color(1,1,1,1);
+        }
+        
+    }
+
     //플레이어 복귀 로직
     public void RespawnPlayer()
     {
         Invoke("RespawnPlayerExe", 2f);
     }
-
-    void RespawnPlayerExe()
+    
+    public void RespawnPlayerExe()
     {
         player.transform.position = Vector3.down * 3.5f;
         player.SetActive(true);
+
+        Player playerLogic = player.GetComponent<Player>();
+        playerLogic.isHit = false;
     }
+
+    public void GameOver()
+    {
+        gameOverSet.SetActive(true);
+    }
+
+    public void GameRetry()
+    {
+        SceneManager.LoadScene(0);
+    }
+
 }
