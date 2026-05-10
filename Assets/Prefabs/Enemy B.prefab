@@ -208,3 +208,6 @@ MonoBehaviour:
   bossDeathHideDelay: 0.12
   bossHitTriggerParameter: OnHit
   spawnHitIgnoreSeconds: 0.15
+  patternIndex: -1
+  curPatternCount: 0
+  maxPatternCount: 0200000003000000630000000a000000

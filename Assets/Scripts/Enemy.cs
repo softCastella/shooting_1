@@ -30,6 +30,9 @@ public class Enemy : MonoBehaviour
     float suppressHitUntilTime;
 
     static bool warnedBossHitTriggerMissing;
+    public int patternIndex;
+    public int curPatternCount;
+    public int[] maxPatternCount;
 
     void Awake()
     {
@@ -62,8 +65,154 @@ public class Enemy : MonoBehaviour
                 health = 3;
                 break;
             case "B":
+                health = 3000;
+                Invoke("stop", 2f);
                 break;
         }
+    }
+
+    void stop()
+    {
+       if(!gameObject.activeSelf)
+       
+        return;
+       
+       Rigidbody2D rigid = GetComponent<Rigidbody2D>();
+       rigid.velocity = Vector2.zero;
+
+       Invoke("Think", 2);
+    }
+
+    void Think()
+    {
+        patternIndex = patternIndex==3 ? 0 : patternIndex+1;
+        switch (patternIndex)
+        {
+            case 0:
+            FireFoward();
+                break;
+            case 1:
+            FireShot();
+                break;
+            case 2:
+            FireArc();
+                break;
+            case 3:
+            FireAround();
+                break;
+        }
+    }
+
+    /// 보스 본체 콜라이더 안에서 탄이 스폰되면 튕기거나 박혀서 제자리에서 빙글 도는 것처럼 보일 수 있음.
+    static void ClearBossForwardBulletSpin(GameObject bullet)
+    {
+        if (bullet == null)
+            return;
+        Bullet b = bullet.GetComponent<Bullet>();
+        if (b != null)
+            b.isRotate = false;
+    }
+
+    void FireFoward()
+    {
+            // 몸통보다 살짝 아래에서 나오게 해 콜라이더와 겹침 완화
+            Vector3 spawnY = transform.position + Vector3.down * 0.28f;
+            GameObject bulletR = objectManager.MakeObj("bulletBossA");
+            bulletR.transform.position = spawnY + Vector3.right * 0.3f;
+            ClearBossForwardBulletSpin(bulletR);
+            GameObject bulletRR = objectManager.MakeObj("bulletBossA");
+            bulletRR.transform.position = spawnY + Vector3.right * 0.45f;
+            ClearBossForwardBulletSpin(bulletRR);
+            GameObject bulletL = objectManager.MakeObj("bulletBossA");
+            bulletL.transform.position = spawnY + Vector3.left * 0.3f;
+            ClearBossForwardBulletSpin(bulletL);
+            GameObject bulletLL = objectManager.MakeObj("bulletBossA");
+            bulletLL.transform.position = spawnY + Vector3.left * 0.45f;
+            ClearBossForwardBulletSpin(bulletLL);
+
+            Rigidbody2D rigidR = bulletR.GetComponent<Rigidbody2D>();
+            Rigidbody2D rigidRR = bulletRR.GetComponent<Rigidbody2D>();
+            Rigidbody2D rigidL = bulletL.GetComponent<Rigidbody2D>();
+            Rigidbody2D rigidLL = bulletLL.GetComponent<Rigidbody2D>();
+            if (rigidL == null || rigidR == null)
+                return;
+
+            
+            rigidL.AddForce(Vector2.down * 8, ForceMode2D.Impulse);
+            rigidR.AddForce(Vector2.down * 8, ForceMode2D.Impulse);
+            rigidLL.AddForce(Vector2.down * 8, ForceMode2D.Impulse);
+            rigidRR.AddForce(Vector2.down * 8, ForceMode2D.Impulse);
+        
+        
+        curPatternCount++;
+        if(curPatternCount < maxPatternCount[patternIndex])
+        Invoke("FireFoward", 2);
+        else
+        Invoke("Think", 3);
+    }
+
+    void FireShot()
+    {
+        for(int i = 0; i < 5; i++)
+        {
+
+        GameObject bullet = objectManager.MakeObj("bulletEnemyB");
+            if (bullet == null)
+                return;
+
+            bullet.transform.position = transform.position;
+
+            Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
+            if (rigid == null)
+                return;
+
+            Vector2 dirVec = player.transform.position - transform.position;
+            Vector2 ranVec = new Vector2(Random.Range(-0.5f, 0.5f), Random.Range(0f, 2f));
+            dirVec += ranVec;
+            rigid.AddForce(dirVec.normalized * 3, ForceMode2D.Impulse);
+        }
+
+        curPatternCount++;
+        if(curPatternCount < maxPatternCount[patternIndex])
+        Invoke("FireShot", 3.5f);
+        else
+        Invoke("Think", 3);
+    }
+
+    void FireArc()
+    {
+        {
+
+            GameObject bullet = objectManager.MakeObj("bulletEnemyA");
+            if (bullet == null)
+                return;
+
+            bullet.transform.position = transform.position;
+            bullet.transform.rotation = Quaternion.identity;
+
+            Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
+            if (rigid == null)
+                return;
+
+            Vector2 dirVec = new Vector2(Mathf.Sin(Mathf.PI * 2 * curPatternCount/maxPatternCount[patternIndex]), -1);
+            rigid.AddForce(dirVec.normalized * 5, ForceMode2D.Impulse);
+        }
+
+        curPatternCount++;
+        if(curPatternCount < maxPatternCount[patternIndex])
+        Invoke("FireArc", 0.15f);
+        else
+        Invoke("Think", 3);
+    }
+
+    void FireAround()
+    {
+        Debug.Log("원 형태로 전체 공격");
+        curPatternCount++;
+        if(curPatternCount < maxPatternCount[patternIndex])
+        Invoke("FireAround", 0.7f);
+        else
+        Invoke("Think", 3);
     }
 
     void CacheAnimatorIfBoss()
