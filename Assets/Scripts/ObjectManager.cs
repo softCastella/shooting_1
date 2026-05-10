@@ -7,6 +7,7 @@ public class ObjectManager : MonoBehaviour
     public GameObject enemyLPrefab;
     public GameObject enemyMPrefab;
     public GameObject enemySPrefab;
+    public GameObject enemyBPrefab;
     public GameObject itemCoinPrefab;
     public GameObject itemPowerPrefab;
     public GameObject itemBoomPrefab;
@@ -14,11 +15,15 @@ public class ObjectManager : MonoBehaviour
     public GameObject bulletPlayerBPrefab;
     public GameObject bulletEnemyAPrefab;
     public GameObject bulletEnemyBPrefab;
+    public GameObject bulletFollowerPrefab;
+    public GameObject bulletBossPrefabA;
+    public GameObject bulletBossPrefabB;
 
     // --- 풀 배열(런타임에 Generate에서 채움) ---
     GameObject[] enemyL;
     GameObject[] enemyM;
     GameObject[] enemyS;
+    GameObject[] enemyB;
 
     GameObject[] itemCoin;
     GameObject[] itemPower;
@@ -28,30 +33,35 @@ public class ObjectManager : MonoBehaviour
     GameObject[] bulletPlayerB;
     GameObject[] bulletEnemyA;
     GameObject[] bulletEnemyB;
+    GameObject[] bulletFollower;
+    GameObject[] bulletBossA;
+    GameObject[] bulletBossB;
 
-    // MakeObj 시 현재 순회할 풀 참조
     GameObject[] targetPool;
 
     void Awake()
     {
-        // 풀 크기만큼 배열 할당
-        enemyL = new GameObject[5];
-        enemyM = new GameObject[5];
-        enemyS = new GameObject[5];
+        enemyL = new GameObject[10];
+        enemyM = new GameObject[10];
+        enemyS = new GameObject[20];
+        enemyB = new GameObject[5];
 
-        itemCoin = new GameObject[3];
-        itemPower = new GameObject[3];
-        itemBoom = new GameObject[3];
+        itemCoin = new GameObject[20];
+        itemPower = new GameObject[10];
+        itemBoom = new GameObject[10];
 
-        bulletPlayerA = new GameObject[20];
-        bulletPlayerB = new GameObject[20];
-        bulletEnemyA = new GameObject[20];
-        bulletEnemyB = new GameObject[20];
+        bulletPlayerA = new GameObject[100];
+        bulletPlayerB = new GameObject[100];
+        bulletEnemyA = new GameObject[100];
+        bulletEnemyB = new GameObject[100];
+        bulletFollower = new GameObject[100];
+        bulletBossA = new GameObject[50];
+        bulletBossB = new GameObject[200];
 
         Generate();
     }
 
-    void Generate() // 최초 풀 채우기: Instantiate 후 SetActive(false)
+    void Generate()
     {
         for (int i = 0; i < enemyL.Length; i++)
         {
@@ -69,6 +79,12 @@ public class ObjectManager : MonoBehaviour
         {
             enemyS[i] = Instantiate(enemySPrefab);
             enemyS[i].SetActive(false);
+        }
+
+        for (int i = 0; i < enemyB.Length; i++)
+        {
+            enemyB[i] = Instantiate(enemyBPrefab);
+            enemyB[i].SetActive(false);
         }
 
         for (int i = 0; i < itemCoin.Length; i++)
@@ -112,9 +128,26 @@ public class ObjectManager : MonoBehaviour
             bulletEnemyB[i] = Instantiate(bulletEnemyBPrefab);
             bulletEnemyB[i].SetActive(false);
         }
+
+        for (int i = 0; i < bulletBossA.Length; i++)
+        {
+            bulletBossA[i] = Instantiate(bulletBossPrefabA);
+            bulletBossA[i].SetActive(false);
+        }
+
+        for (int i = 0; i < bulletBossB.Length; i++)
+        {
+            bulletBossB[i] = Instantiate(bulletBossPrefabB);
+            bulletBossB[i].SetActive(false);
+        }
+
+        for (int i = 0; i < bulletFollower.Length; i++)
+        {
+            bulletFollower[i] = Instantiate(bulletFollowerPrefab);
+            bulletFollower[i].SetActive(false);
+        }
     }
 
-    // type은 enemyL, bulletPlayerA 등 — 발사·스폰 코드와 문자열 통일
     public GameObject MakeObj(string type)
     {
         switch (type)
@@ -127,6 +160,9 @@ public class ObjectManager : MonoBehaviour
                 break;
             case "enemyS":
                 targetPool = enemyS;
+                break;
+            case "enemyB":
+                targetPool = enemyB;
                 break;
             case "itemCoin":
                 targetPool = itemCoin;
@@ -149,6 +185,15 @@ public class ObjectManager : MonoBehaviour
             case "bulletEnemyB":
                 targetPool = bulletEnemyB;
                 break;
+            case "bulletBossA":
+                targetPool = bulletBossA;
+                break;
+            case "bulletBossB":
+                targetPool = bulletBossB;
+                break;
+            case "bulletFollower":
+                targetPool = bulletFollower;
+                break;
             default:
                 Debug.LogWarning($"MakeObj: unknown type '{type}'");
                 return null;
@@ -159,7 +204,6 @@ public class ObjectManager : MonoBehaviour
 
         for (int i = 0; i < targetPool.Length; i++)
         {
-            // 과거 Destroy로 깨진 슬롯 방지
             if (targetPool[i] == null)
                 continue;
             if (!targetPool[i].activeSelf)
@@ -168,10 +212,10 @@ public class ObjectManager : MonoBehaviour
                 return targetPool[i];
             }
         }
-        return null; // 풀 고갈
+        return null;
     }
 
-    public GameObject[] GetPool(string type) // Boom 등 전체 풀 순회용, MakeObj와 같은 type 키
+    public GameObject[] GetPool(string type)
     {
         switch (type)
         {
@@ -181,6 +225,8 @@ public class ObjectManager : MonoBehaviour
                 return enemyM;
             case "enemyS":
                 return enemyS;
+            case "enemyB":
+                return enemyB;
             case "itemCoin":
                 return itemCoin;
             case "itemPower":
@@ -195,6 +241,12 @@ public class ObjectManager : MonoBehaviour
                 return bulletEnemyA;
             case "bulletEnemyB":
                 return bulletEnemyB;
+            case "bulletBossA":
+                return bulletBossA;
+            case "bulletBossB":
+                return bulletBossB;
+            case "bulletFollower":
+                return bulletFollower;
             default:
                 Debug.LogWarning($"GetPool: unknown type '{type}'");
                 return null;

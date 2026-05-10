@@ -3,31 +3,49 @@ using UnityEngine;
 // 적: 속도는 GameManager 스폰 시 설정. 발사·피격·아이템 드랍·총알 충돌.
 public class Enemy : MonoBehaviour
 {
-    public string enemyName; // "L" 대형, "M" 중형, "S" 소형 — 발사 패턴 분기
+    public string enemyName;
+
     public int enemyScore;
 
     public float speed;
     public float health;
     public int dmg;
-    public float maxShotDelay; // 발사 간격(초)
+    public float maxShotDelay;
     public float curShotDelay;
 
     public GameObject player;
-    public GameObject bulletObjA; // 레거시 참조 가능
+    public GameObject bulletObjA;
     public GameObject bulletObjB;
     public ObjectManager objectManager;
 
-    public Sprite[] sprites; // [0] 기본, [1] 피격 시 잠시 교체
+    public Sprite[] sprites;
     SpriteRenderer spriteRenderer;
+    Animator anim;
+
+    public float bossDeathHideDelay = 0.12f;
+    public string bossHitTriggerParameter = "OnHit";
+    public float spawnHitIgnoreSeconds = 0.15f;
+
+    bool deathHandled;
+    float suppressHitUntilTime;
+
+    static bool warnedBossHitTriggerMissing;
 
     void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
+        CacheAnimatorIfBoss();
     }
 
-    void OnEnable() // 풀에서 켜질 때(아직 enemyName이 안 바뀐 프레임일 수 있음)
+    void OnEnable()
     {
+        CancelInvoke(nameof(ReturnToPool));
+        CancelInvoke(nameof(ReturnSprite));
+        deathHandled = false;
+        suppressHitUntilTime = Time.time + spawnHitIgnoreSeconds;
         ApplyHealthFromEnemyName();
+        if (enemyName == "B")
+            ResetBossAnimatorTriggers();
     }
 
     void ApplyHealthFromEnemyName()
@@ -43,24 +61,50 @@ public class Enemy : MonoBehaviour
             case "S":
                 health = 3;
                 break;
+            case "B":
+                break;
         }
     }
 
-    // 텍스트 스폰 등에서 풀 활성화 후 호출 — OnEnable보다 늦게 타입이 정해질 때
+    void CacheAnimatorIfBoss()
+    {
+        if (enemyName == "B")
+            anim = GetComponent<Animator>();
+    }
+
+    void ResetBossAnimatorTriggers()
+    {
+        if (anim == null)
+            anim = GetComponent<Animator>();
+        if (anim == null)
+            return;
+        foreach (AnimatorControllerParameter p in anim.parameters)
+        {
+            if (p.type == AnimatorControllerParameterType.Trigger)
+                anim.ResetTrigger(p.name);
+        }
+    }
+
     public void SetSpawnEnemyKind(string kind)
     {
         enemyName = (kind ?? "").Trim();
+        CacheAnimatorIfBoss();
         ApplyHealthFromEnemyName();
         curShotDelay = 0f;
+        suppressHitUntilTime = Time.time + spawnHitIgnoreSeconds;
+        if (enemyName == "B")
+            ResetBossAnimatorTriggers();
     }
 
     void Update()
     {
+        if (enemyName == "B")
+            return;
         Fire();
         Reload();
     }
 
-    void Fire() // S: bulletEnemyA 1발, L: bulletEnemyB 2발 (풀)
+    void Fire()
     {
         if (curShotDelay < maxShotDelay)
             return;
@@ -102,6 +146,7 @@ public class Enemy : MonoBehaviour
             rigidL.AddForce(dirVecL.normalized * 10, ForceMode2D.Impulse);
             rigidR.AddForce(dirVecR.normalized * 10, ForceMode2D.Impulse);
         }
+
         curShotDelay = 0;
     }
 
@@ -110,27 +155,57 @@ public class Enemy : MonoBehaviour
         curShotDelay += Time.deltaTime;
     }
 
-    public void OnHit(int dmg) // 사망 시 점수·아이템·적 풀 반환(SetActive false)
+    void TrySetBossHitTrigger()
     {
-        if (health <= 0)
+        if (anim == null || string.IsNullOrEmpty(bossHitTriggerParameter))
+            return;
+
+        foreach (AnimatorControllerParameter p in anim.parameters)
+        {
+            if (p.type == AnimatorControllerParameterType.Trigger && p.name == bossHitTriggerParameter)
+            {
+                anim.SetTrigger(bossHitTriggerParameter);
+                return;
+            }
+        }
+
+        if (!warnedBossHitTriggerMissing)
+        {
+            warnedBossHitTriggerMissing = true;
+            Debug.LogWarning($"[Enemy] Animator Trigger '{bossHitTriggerParameter}' 없음.");
+        }
+    }
+
+    public void OnHit(int dmg)
+    {
+        if (health <= 0 || deathHandled)
+            return;
+        if (Time.time < suppressHitUntilTime)
             return;
 
         Debug.Log("OnHit: " + dmg);
         health -= dmg;
 
-        if (spriteRenderer != null && sprites != null && sprites.Length > 1 && sprites[1] != null)
+        if (enemyName == "B")
+        {
+            if (anim == null)
+                anim = GetComponent<Animator>();
+            TrySetBossHitTrigger();
+        }
+        else if (spriteRenderer != null && sprites != null && sprites.Length > 1 && sprites[1] != null)
         {
             spriteRenderer.sprite = sprites[1];
-            Invoke("ReturnSprite", 0.1f);
+            Invoke(nameof(ReturnSprite), 0.1f);
         }
 
         if (health <= 0)
         {
+            deathHandled = true;
+
             Player playerLogic = player.GetComponent<Player>();
             playerLogic.score += enemyScore;
 
-            // 확률: 무드랍 30%, 코인 30%, 파워 20%, 붐 20%
-            int ran = Random.Range(0, 10);
+            int ran = enemyName == "B" ? 0 : Random.Range(0, 10);
             if (ran < 3)
             {
                 Debug.Log("NotItem");
@@ -138,22 +213,33 @@ public class Enemy : MonoBehaviour
             else if (ran < 6 && objectManager != null)
             {
                 GameObject itemCoin = objectManager.MakeObj("itemCoin");
-                itemCoin.transform.position = transform.position;
+                if (itemCoin != null)
+                    itemCoin.transform.position = transform.position;
             }
             else if (ran < 8 && objectManager != null)
             {
                 GameObject itemPower = objectManager.MakeObj("itemPower");
-                itemPower.transform.position = transform.position;
+                if (itemPower != null)
+                    itemPower.transform.position = transform.position;
             }
             else if (ran < 10 && objectManager != null)
             {
                 GameObject itemBoom = objectManager.MakeObj("itemBoom");
-                itemBoom.transform.position = transform.position;
+                if (itemBoom != null)
+                    itemBoom.transform.position = transform.position;
             }
 
-            gameObject.SetActive(false);
-            transform.rotation = Quaternion.identity;
+            if (enemyName == "B" && bossDeathHideDelay > 0f)
+                Invoke(nameof(ReturnToPool), bossDeathHideDelay);
+            else
+                ReturnToPool();
         }
+    }
+
+    void ReturnToPool()
+    {
+        gameObject.SetActive(false);
+        transform.rotation = Quaternion.identity;
     }
 
     void ReturnSprite()
@@ -164,11 +250,8 @@ public class Enemy : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.tag == "BorderBullet")
-        {
-            gameObject.SetActive(false);
-            transform.rotation = Quaternion.identity;
-        }
+        if (collision.gameObject.tag == "BorderBullet" && enemyName != "B")
+            ReturnToPool();
         else if (collision.gameObject.tag == "PlayerBullet")
         {
             Bullet bullet = collision.gameObject.GetComponent<Bullet>();
@@ -179,15 +262,15 @@ public class Enemy : MonoBehaviour
 
     void OnTriggerExit2D(Collider2D collision)
     {
-        if (collision.gameObject.tag == "BorderBullet")
-            gameObject.SetActive(false);
+        if (collision.gameObject.tag == "BorderBullet" && enemyName != "B")
+            ReturnToPool();
         else if (collision.gameObject.tag == "PlayerBullet")
         {
             Bullet bullet = collision.gameObject.GetComponent<Bullet>();
             if (bullet != null)
             {
                 OnHit(bullet.Damage);
-                collision.gameObject.SetActive(false); // 플레이어 총알 풀 반환
+                collision.gameObject.SetActive(false);
             }
         }
     }

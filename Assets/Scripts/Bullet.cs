@@ -1,11 +1,11 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 
-// 총알: BorderBullet 닿으면 풀 반환. 대미지 dmg → Enemy는 Damage로 접근.
 public class Bullet : MonoBehaviour
 {
     [FormerlySerializedAs("dmg")]
     public int dmg;
+    public bool isRotate;
 
     public int Damage => dmg;
 
@@ -16,7 +16,6 @@ public class Bullet : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
-    // 풀에서 다시 켤 때 이전 속도 제거 — 안 하면 가끔 멈춘 채로 보이거나 impulse가 꼬임
     void OnEnable()
     {
         if (rb != null)
@@ -24,6 +23,12 @@ public class Bullet : MonoBehaviour
             rb.velocity = Vector2.zero;
             rb.angularVelocity = 0f;
         }
+    }
+
+    void Update()
+    {
+        if (isRotate)
+            transform.Rotate(Vector3.forward * 10);
     }
 
     void OnTriggerEnter2D(Collider2D collision)

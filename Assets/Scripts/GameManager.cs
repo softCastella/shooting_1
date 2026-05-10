@@ -8,10 +8,10 @@ using System.IO;
 // 스폰 타이머, UI, 리스폰·게임오버. 적은 MakeObj(enemyObjs 키).
 public class GameManager : MonoBehaviour
 {
-    public string[] enemyObjs;       // MakeObj에 넘길 키: enemyL, enemyM, enemyS
-    public Transform[] spawnPoints; // 랜덤 스폰 위치
+    public string[] enemyObjs;
+    public Transform[] spawnPoints;
 
-    public float maxSpawnDelay; // 다음 스폰까지 대기 시간(매번 랜덤으로 갱신)
+    public float maxSpawnDelay;
     public float curSpawnDelay;
 
     public GameObject player;
@@ -20,7 +20,6 @@ public class GameManager : MonoBehaviour
     public Image[] boomImage;
     public GameObject gameOverSet;
     public ObjectManager objectManager;
-    // Resources 폴더 안 텍스트 이름(.txt 빼고). 예: Resources/stage 0.txt → "stage 0"
     public string spawnTextResourceName = "stage 0";
 
     public List<Spawn> spawnList;
@@ -28,60 +27,56 @@ public class GameManager : MonoBehaviour
     public bool spawnEnd;
 
     Player playerLogic;
-    
 
     void Awake()
     {
         spawnList = new List<Spawn>();
         playerLogic = player.GetComponent<Player>();
-        enemyObjs = new string[] { "enemyL", "enemyM", "enemyS" };
+        enemyObjs = new string[] { "enemyL", "enemyM", "enemyS", "enemyB" };
         ReadSpawnFile();
     }
 
     void ReadSpawnFile()
     {
-        //1. 변수 초기화
         spawnList.Clear();
         spawnIndex = 0;
         spawnEnd = false;
 
-        //2. 텍스트 파일 읽기 — 한 줄 형식: 지연시간,타입,포인트 (쉼표 구분)
         TextAsset textFile = Resources.Load<TextAsset>(spawnTextResourceName);
         if (textFile == null)
         {
-            Debug.LogError($"GameManager: Resources에서 '{spawnTextResourceName}' 텍스트를 찾을 수 없습니다. (폴더 Resources, 확장자 .txt)");
+            Debug.LogError($"GameManager: Resources에서 '{spawnTextResourceName}' 텍스트를 찾을 수 없습니다.");
             maxSpawnDelay = 999f;
             return;
         }
-        StringReader stringReader = new StringReader(textFile.text);
 
-        while (true)
+        using (StringReader stringReader = new StringReader(textFile.text))
         {
-            string line = stringReader.ReadLine();
-            if (line == null)
-                break;
+            while (true)
+            {
+                string line = stringReader.ReadLine();
+                if (line == null)
+                    break;
 
-            line = line.Trim();
-            if (line.Length == 0 || line.StartsWith("#"))
-                continue;
+                line = line.Trim();
+                if (line.Length == 0 || line.StartsWith("#"))
+                    continue;
 
-            string[] cols = line.Split(',');
-            if (cols.Length < 3)
-                continue;
+                string[] cols = line.Split(',');
+                if (cols.Length < 3)
+                    continue;
 
-            Spawn spawnData = new Spawn();
-            spawnData.delay = float.Parse(cols[0].Trim());
-            // 두 번째 열: L/M/S 한 글자(대소문 무관). 앞뒤 공백·숨은 문자(예: BOM/ZWSP) 있어도 첫 글자만 사용
-            spawnData.type = ParseSpawnTypeLetter(cols[1]);
-            spawnData.point = int.Parse(cols[2].Trim());
-            spawnList.Add(spawnData);
+                Spawn spawnData = new Spawn();
+                spawnData.delay = float.Parse(cols[0].Trim());
+                spawnData.type = ParseSpawnTypeLetter(cols[1]);
+                spawnData.point = int.Parse(cols[2].Trim());
+                spawnList.Add(spawnData);
+            }
         }
-
-        stringReader.Close();
 
         if (spawnList.Count == 0)
         {
-            Debug.LogError("GameManager: 스폰 목록이 비었습니다. Stage 파일 형식을 확인하세요.");
+            Debug.LogError("GameManager: 스폰 목록이 비었습니다.");
             maxSpawnDelay = 999f;
             spawnEnd = true;
             return;
@@ -96,7 +91,7 @@ public class GameManager : MonoBehaviour
         foreach (char ch in raw.Trim())
         {
             char u = char.ToUpperInvariant(ch);
-            if (u == 'L' || u == 'M' || u == 'S')
+            if (u == 'L' || u == 'M' || u == 'S' || u == 'B')
                 return u.ToString();
         }
         return "S";
@@ -108,22 +103,20 @@ public class GameManager : MonoBehaviour
         if (curSpawnDelay > maxSpawnDelay && !spawnEnd)
         {
             SpawnEnemy();
-            
             curSpawnDelay = 0;
         }
 
         scoreText.text = string.Format("{0:n0}", playerLogic.score);
     }
 
-    void SpawnEnemy() // MakeObj 후 스폰점·방향별 회전·velocity
+    void SpawnEnemy()
     {
         if (objectManager == null || spawnList == null || spawnIndex >= spawnList.Count)
             return;
 
         string type = (spawnList[spawnIndex].type ?? "").Trim();
 
-        int enemyIndex = 0;
-        // 스폰 텍스트 type L/M/S → 인덱스 0/1/2 → enemyObjs[i]는 풀 키 문자열(enemyL, enemyM, enemyS)
+        int enemyIndex = 2;
         switch (type)
         {
             case "L":
@@ -135,7 +128,20 @@ public class GameManager : MonoBehaviour
             case "S":
                 enemyIndex = 2;
                 break;
+            case "B":
+                enemyIndex = 3;
+                break;
+            default:
+                enemyIndex = 2;
+                break;
         }
+
+        if (enemyObjs == null || enemyIndex < 0 || enemyIndex >= enemyObjs.Length)
+        {
+            Debug.LogWarning($"GameManager: enemyObjs 오류 type={type} index={enemyIndex}");
+            return;
+        }
+
         int enemyPoint = spawnList[spawnIndex].point;
 
         if (spawnPoints == null || enemyPoint < 0 || enemyPoint >= spawnPoints.Length || spawnPoints[enemyPoint] == null)
@@ -146,7 +152,7 @@ public class GameManager : MonoBehaviour
 
         GameObject enemy = objectManager.MakeObj(enemyObjs[enemyIndex]);
         if (enemy == null)
-            return; // 풀 고갈 — 인덱스 유지 후 다음 타이머에 재시도
+            return;
 
         enemy.transform.rotation = Quaternion.identity;
         enemy.transform.position = spawnPoints[enemyPoint].position;
@@ -161,9 +167,8 @@ public class GameManager : MonoBehaviour
 
         enemyLogic.player = player;
         enemyLogic.objectManager = objectManager;
-        enemyLogic.SetSpawnEnemyKind(type); // Spawn.type → Enemy 행동(체력·발사)
+        enemyLogic.SetSpawnEnemyKind(type);
 
-        // 스폰 포인트 인덱스에 따른 이동 방향
         if (enemyPoint == 5 || enemyPoint == 6)
         {
             enemy.transform.Rotate(Vector3.back * 90);
@@ -178,9 +183,9 @@ public class GameManager : MonoBehaviour
         {
             rigid.velocity = new Vector2(0, enemyLogic.speed * (-1));
         }
-        //리스폰 인덱스 증가
+
         spawnIndex++;
-        if(spawnIndex == spawnList.Count)
+        if (spawnIndex == spawnList.Count)
         {
             spawnEnd = true;
             return;
@@ -188,7 +193,7 @@ public class GameManager : MonoBehaviour
         maxSpawnDelay = spawnList[spawnIndex].delay;
     }
 
-    public void updateLifeIcon(int life) // 생명 아이콘
+    public void updateLifeIcon(int life)
     {
         for (int i = 0; i < lifeImage.Length; i++)
             lifeImage[i].color = new Color(1, 1, 1, 0);
@@ -197,7 +202,7 @@ public class GameManager : MonoBehaviour
             lifeImage[i].color = new Color(1, 1, 1, 1);
     }
 
-    public void updateBoomIcon(int boom) // 폭탄 아이콘
+    public void updateBoomIcon(int boom)
     {
         for (int i = 0; i < boomImage.Length; i++)
             boomImage[i].color = new Color(1, 1, 1, 0);
@@ -206,9 +211,9 @@ public class GameManager : MonoBehaviour
             boomImage[i].color = new Color(1, 1, 1, 1);
     }
 
-    public void RespawnPlayer() // 2초 뒤 부활
+    public void RespawnPlayer()
     {
-        Invoke("RespawnPlayerExe", 2f);
+        Invoke(nameof(RespawnPlayerExe), 2f);
     }
 
     public void RespawnPlayerExe()
@@ -216,8 +221,8 @@ public class GameManager : MonoBehaviour
         player.transform.position = Vector3.down * 3.5f;
         player.SetActive(true);
 
-        Player playerLogic = player.GetComponent<Player>();
-        playerLogic.isHit = false;
+        Player pl = player.GetComponent<Player>();
+        pl.isHit = false;
     }
 
     public void GameOver()
