@@ -26,6 +26,9 @@ public class GameManager : MonoBehaviour
     public int spawnIndex;
     public bool spawnEnd;
 
+    [Tooltip("플레이어 사망 후 리스폰까지 걸리는 시간과 동일하게 맞추면 보스 발사 정지 구간과 맞음.")]
+    public float respawnDelay = 2f;
+
     Player playerLogic;
 
     void Awake()
@@ -213,7 +216,8 @@ public class GameManager : MonoBehaviour
 
     public void RespawnPlayer()
     {
-        Invoke(nameof(RespawnPlayerExe), 2f);
+        PauseBossAttackForActiveBosses(respawnDelay);
+        Invoke(nameof(RespawnPlayerExe), respawnDelay);
     }
 
     public void RespawnPlayerExe()
@@ -227,7 +231,41 @@ public class GameManager : MonoBehaviour
 
     public void GameOver()
     {
+        CancelBossPatternScheduleForActiveBosses();
         gameOverSet.SetActive(true);
+    }
+
+    void PauseBossAttackForActiveBosses(float durationSeconds)
+    {
+        ForEachActiveBoss(enemy =>
+        {
+            if (enemy != null)
+                enemy.PauseBossAttack(durationSeconds);
+        });
+    }
+
+    void CancelBossPatternScheduleForActiveBosses()
+    {
+        ForEachActiveBoss(enemy =>
+        {
+            if (enemy != null)
+                enemy.CancelBossPatternSchedule();
+        });
+    }
+
+    void ForEachActiveBoss(System.Action<Enemy> visitor)
+    {
+        if (objectManager == null)
+            return;
+        GameObject[] pool = objectManager.GetPool("enemyB");
+        if (pool == null)
+            return;
+        for (int i = 0; i < pool.Length; i++)
+        {
+            if (pool[i] == null || !pool[i].activeInHierarchy)
+                continue;
+            visitor(pool[i].GetComponent<Enemy>());
+        }
     }
 
     public void GameRetry()

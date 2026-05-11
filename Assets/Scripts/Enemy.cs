@@ -37,15 +37,20 @@ public class Enemy : MonoBehaviour
     public int curPatternCount;
     public int[] maxPatternCount;
 
-    [Header("보스 FireAround (원형 탄)")]
-    [Tooltip("짝수 번째 원(첫·셋째…) 한 바퀴 발 수")]
-    [SerializeField] int fireAroundCountEven = 50;
-    [Tooltip("홀수 번째 원(둘째·넷째…) 한 바퀴 발 수")]
-    [SerializeField] int fireAroundCountOdd = 40;
-    [Tooltip("원형 패턴이 한 바퀴돌고 같은 패턴으로 반복될 때 간격(초). 늘리면 웨이브 사이가 넓어짐.")]
-    [SerializeField] float fireAroundRepeatDelay = 0.7f;
-    [Tooltip("홀수 번째 원마다 각도에 π/N(반 칸) 보정. 짝·홀 발 수가 다를 때 둘째 원이 첫 원과 같은 방향 기준으로만 돌아가 덜 어색하게 맞춤.")]
-    [SerializeField] bool fireAroundHalfStepOddWaves = true;
+    /// FireAround만 사용: 0=첫 원(기준각), 1=둘째 원(스큐), … Think에서 패턴 시작 시 0으로 리셋.
+    int fireAroundRingIndex;
+
+    float bossSuspendAttackUntilTime;
+
+    [Header("보스 FireAround")]
+    [Tooltip("매 원 발 수(고정). 짝·홀 차례 모두 동일 간격.")]
+    [SerializeField] int fireAroundBulletsPerRing = 50;
+    [Tooltip("2·4·6번째 원 전체를 한 번에 이 각도만큼 회전(원 안에서는 각도 고정, 다음 원까지 바뀌지 않음)")]
+    [SerializeField] float fireAroundSkewRingDegrees = 9f;
+    [Tooltip("다음 발이 기본 원(1·3·5번째…)일 때까지 간격(초)")]
+    [SerializeField] float fireAroundDelayBeforeNormalRing = 1.15f;
+    [Tooltip("다음 발이 비틀린 원(2·4번째…)일 때까지 간격(초)")]
+    [SerializeField] float fireAroundDelayBeforeSkewRing = 1.05f;
 
     void Awake()
     {
@@ -90,6 +95,9 @@ public class Enemy : MonoBehaviour
        if(!gameObject.activeSelf)
        
         return;
+
+       if (TryDeferBossPatternInvoke(nameof(stop)))
+           return;
        
        Rigidbody2D rigid = GetComponent<Rigidbody2D>();
        rigid.velocity = Vector2.zero;
@@ -99,9 +107,13 @@ public class Enemy : MonoBehaviour
 
     void Think()
     {
-        // --- [테스트] FireAround만 — 복구: 아래 4줄 삭제 후 주석(/* … */) 해제 ---
+        if (TryDeferBossPatternInvoke(nameof(Think)))
+            return;
+
+        // --- [테스트] FireAround만 — 복구: 아래 5줄 삭제 후 주석(/* … */) 해제 ---
         patternIndex = 3;
         curPatternCount = 0;
+        fireAroundRingIndex = 0;
         FireAround();
         return;
 
@@ -120,10 +132,43 @@ public class Enemy : MonoBehaviour
                 FireArc();
                 break;
             case 3:
+                fireAroundRingIndex = 0;
                 FireAround();
                 break;
         }
         */
+    }
+
+    /// 플레이어 리스폰 대기 등 — 예약된 패턴 Invoke는 유지하고 실행만 미룸.
+    public void PauseBossAttack(float durationSeconds)
+    {
+        if (enemyName != "B" || durationSeconds <= 0f)
+            return;
+        bossSuspendAttackUntilTime = Mathf.Max(bossSuspendAttackUntilTime, Time.time + durationSeconds);
+    }
+
+    /// 게임 오버 등 — 보스 패턴 예약만 취소 (히트 스프라이트 등 다른 Invoke는 유지).
+    public void CancelBossPatternSchedule()
+    {
+        if (enemyName != "B")
+            return;
+        CancelInvoke(nameof(Think));
+        CancelInvoke(nameof(stop));
+        CancelInvoke(nameof(FireFoward));
+        CancelInvoke(nameof(FireShot));
+        CancelInvoke(nameof(FireArc));
+        CancelInvoke(nameof(FireAround));
+    }
+
+    bool TryDeferBossPatternInvoke(string retryMethodName)
+    {
+        if (enemyName != "B")
+            return false;
+        if (Time.time >= bossSuspendAttackUntilTime)
+            return false;
+        float wait = Mathf.Clamp(bossSuspendAttackUntilTime - Time.time, 0.05f, 15f);
+        Invoke(retryMethodName, wait);
+        return true;
     }
 
     /// 보스 본체 콜라이더 안에서 탄이 스폰되면 튕기거나 박혀서 제자리에서 빙글 도는 것처럼 보일 수 있음.
@@ -139,6 +184,8 @@ public class Enemy : MonoBehaviour
     void FireFoward()
     {
         if (health <= 0)
+            return;
+        if (TryDeferBossPatternInvoke(nameof(FireFoward)))
             return;
         Vector3 spawnY = transform.position + Vector3.down * 0.28f;
         GameObject bulletR = objectManager.MakeObj("bulletBossA");
@@ -177,6 +224,8 @@ public class Enemy : MonoBehaviour
     {
         if (health <= 0)
             return;
+        if (TryDeferBossPatternInvoke(nameof(FireShot)))
+            return;
         for (int i = 0; i < 5; i++)
         {
             GameObject bullet = objectManager.MakeObj("bulletEnemyB");
@@ -205,6 +254,8 @@ public class Enemy : MonoBehaviour
     void FireArc()
     {
         if (health <= 0)
+            return;
+        if (TryDeferBossPatternInvoke(nameof(FireArc)))
             return;
 
         GameObject bullet = objectManager.MakeObj("bulletEnemyA");
@@ -238,14 +289,13 @@ public class Enemy : MonoBehaviour
     {
         if (health <= 0)
             return;
+        if (TryDeferBossPatternInvoke(nameof(FireAround)))
+            return;
 
-        int roundNumA = Mathf.Max(3, fireAroundCountEven);
-        int roundNumB = Mathf.Max(3, fireAroundCountOdd);
-        int roundNum = curPatternCount % 2 == 0 ? roundNumA : roundNumB;
-
-        bool oddWave = curPatternCount % 2 == 1;
-        float halfStepRad = fireAroundHalfStepOddWaves && oddWave ? Mathf.PI / roundNum : 0f;
-        float halfStepDeg = fireAroundHalfStepOddWaves && oddWave ? 180f / roundNum : 0f;
+        int roundNum = Mathf.Max(3, fireAroundBulletsPerRing);
+        // 한 원 전체에 같은 오프셋만 적용(루프 안에서 추가 회전 없음). 1·3·5번째 원=기준, 2·4번째=스큐.
+        bool skewRing = (fireAroundRingIndex % 2) == 1;
+        float ringOffsetRad = skewRing ? Mathf.Deg2Rad * fireAroundSkewRingDegrees : 0f;
 
         for (int i = 0; i < roundNum; i++)
         {
@@ -253,25 +303,29 @@ public class Enemy : MonoBehaviour
             if (bullet == null)
                 return;
 
-            float angle = Mathf.PI * 2f * i / roundNum + halfStepRad;
+            float angle = Mathf.PI * 2f * i / roundNum + ringOffsetRad;
             Vector2 dirVec = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
 
             bullet.transform.position = transform.position + (Vector3)(dirVec * 0.35f);
-            bullet.transform.rotation = Quaternion.identity;
+            float faceZ = Mathf.Atan2(dirVec.y, dirVec.x) * Mathf.Rad2Deg - 90f;
+            bullet.transform.rotation = Quaternion.Euler(0f, 0f, faceZ);
 
             Rigidbody2D rigid = bullet.GetComponent<Rigidbody2D>();
             if (rigid == null)
                 return;
 
             rigid.AddForce(dirVec * 5f, ForceMode2D.Impulse);
-
-            Vector3 rotVec = Vector3.forward * (360f * i / roundNum + halfStepDeg + 90f);
-            bullet.transform.Rotate(rotVec);
         }
 
+        fireAroundRingIndex++;
         curPatternCount++;
         if (curPatternCount < maxPatternCount[patternIndex])
-            Invoke(nameof(FireAround), fireAroundRepeatDelay);
+        {
+            float gap = (fireAroundRingIndex % 2 == 1)
+                ? fireAroundDelayBeforeSkewRing
+                : fireAroundDelayBeforeNormalRing;
+            Invoke(nameof(FireAround), gap);
+        }
         else
             Invoke(nameof(Think), 3f);
     }
@@ -303,7 +357,11 @@ public class Enemy : MonoBehaviour
         curShotDelay = 0f;
         suppressHitUntilTime = Time.time + spawnHitIgnoreSeconds;
         if (enemyName == "B")
+        {
+            fireAroundRingIndex = 0;
+            bossSuspendAttackUntilTime = 0f;
             ResetBossAnimatorTriggers();
+        }
     }
 
     void Update()
