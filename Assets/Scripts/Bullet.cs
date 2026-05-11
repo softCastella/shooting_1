@@ -66,5 +66,15 @@ public class Bullet : MonoBehaviour
     {
         if (collision.gameObject.tag == "BorderBullet")
             gameObject.SetActive(false);
+        // 보스/적 탄(EnemyBullet)도 Bullet 스크립트를 쓰므로, 플레이어 탄일 때만 Enemy 피격 처리
+        else if (CompareTag("PlayerBullet") && collision.CompareTag("Enemy"))
+        {
+            Enemy enemy = collision.GetComponent<Enemy>();
+            if (enemy != null)
+            {
+                enemy.OnHit(dmg);
+                gameObject.SetActive(false);
+            }
+        }
     }
 }
