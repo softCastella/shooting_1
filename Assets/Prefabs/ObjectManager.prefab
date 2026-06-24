@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1518207737983878641
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2605216574007449572}
+  - component: {fileID: 5992446075136269997}
+  m_Layer: 0
+  m_Name: ObjectManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2605216574007449572
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1518207737983878641}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5992446075136269997
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1518207737983878641}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcfef2ace3342454090b39b42c17e92f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectManager
+  enemyLPrefab: {fileID: 1388255286693304144, guid: bb07f63b61be728409fcab8cb8caeb54, type: 3}
+  enemyMPrefab: {fileID: 1807851836035192844, guid: 060ee4263c1ed9e47b7e0dff3956d16d, type: 3}
+  enemySPrefab: {fileID: 6449542237684466947, guid: df09f069109323b4197fd40f4b24edcc, type: 3}
+  enemyBPrefab: {fileID: 4635019883655036575, guid: 6ccc7ae2e0ecbd94880e79773a64b1db, type: 3}
+  itemCoinPrefab: {fileID: 8234532309664164387, guid: 1ef365a76257a554499c622e42e0831f, type: 3}
+  itemPowerPrefab: {fileID: 5623583366154271393, guid: 391a215b7e364f54893e416f1b0ae0d4, type: 3}
+  itemBoomPrefab: {fileID: 8552656233393741669, guid: 516024a425261ec4086999e46174a1df, type: 3}
+  bulletPlayerAPrefab: {fileID: 9138175567250405942, guid: 0811e2cda277ad24b840537001621ed3, type: 3}
+  bulletPlayerBPrefab: {fileID: 1990329297118147906, guid: af8a9f197caf7f544bb2068ea20084ce, type: 3}
+  bulletEnemyAPrefab: {fileID: 1990329297118147906, guid: b44e9e8742061ab409e95c5690313e46, type: 3}
+  bulletEnemyBPrefab: {fileID: 1990329297118147906, guid: 127b4ba2d8c7dad43becea4a10e8c79f, type: 3}
+  bulletFollowerPrefab: {fileID: 9138175567250405942, guid: d67bd6c9a8efeec4692bc21cddfd3b14, type: 3}
+  bulletBossPrefabA: {fileID: 1990329297118147906, guid: 54a09ddc363210c40ad860f63630db5f, type: 3}
+  bulletBossPrefabB: {fileID: 1990329297118147906, guid: d4a126f98060c664aa49b1aeb4169820, type: 3}

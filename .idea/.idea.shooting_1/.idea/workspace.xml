@@ -44,7 +44,7 @@
 }]]></component>
   <component name="RunManager" selected="Unity 에디터에 연결.Unity 에디터에 연결">
     <configuration name="유닛 테스트(배치 모드)" type="RunUnityExe" factoryName="Unity Executable">
-      <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.4.2f1\Editor\Unity.exe" />
+      <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.4.1f1\Editor\Unity.exe" />
       <option name="PROGRAM_PARAMETERS" value="-runTests -batchmode -projectPath C:\Users\lanoc\Documents\Workspace\Unity\shooting_1 -testResults Logs/results.xml -logFile Logs/Editor.log -testPlatform EditMode -debugCodeOptimization" />
       <option name="WORKING_DIRECTORY" value="C:\Users\lanoc\Documents\Workspace\Unity\shooting_1" />
       <option name="PASS_PARENT_ENVS" value="1" />
@@ -54,7 +54,7 @@
       <method v="2" />
     </configuration>
     <configuration name="Unity 시작" type="RunUnityExe" factoryName="Unity Executable">
-      <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.4.2f1\Editor\Unity.exe" />
+      <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.4.1f1\Editor\Unity.exe" />
       <option name="PROGRAM_PARAMETERS" value="-projectPath C:\Users\lanoc\Documents\Workspace\Unity\shooting_1 -debugCodeOptimization" />
       <option name="WORKING_DIRECTORY" value="C:\Users\lanoc\Documents\Workspace\Unity\shooting_1" />
       <option name="PASS_PARENT_ENVS" value="1" />
